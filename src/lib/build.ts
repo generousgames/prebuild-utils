@@ -1,16 +1,16 @@
+import { PrebuildConfig, print_prebuild_config } from "./config.js";
 import { run, ensureTool } from "./exec.js";
+import { log } from "./log.js";
 
-export async function cmake_build_preset(rootDir: string, buildType: string) {
+export async function build_dependency(rootDir: string, config: PrebuildConfig) {
+    const { cmake_preset, build_type } = config;
+
+    log.info("Building dependency...");
+    print_prebuild_config(config);
+
     await ensureTool("cmake");
-
-    const PRESET_NAME = `macos-arm64-${buildType}`;
-
-    const env = {
-        ...process.env,
-    };
-
-    await run("cmake", ["--preset", PRESET_NAME], { cwd: rootDir, env });
-    await run("cmake", ["--build", `projects/${PRESET_NAME}`, "--config", buildType, "--parallel"], { cwd: rootDir, env });
+    await run("cmake", ["--preset", cmake_preset], { cwd: rootDir });
+    await run("cmake", ["--build", `projects/${cmake_preset}`, "--config", build_type, "--parallel"], { cwd: rootDir });
 }
 
 // export async function cmake_build_app(rootDir: string, appTarget: string, buildTarget: string, buildType: string) {

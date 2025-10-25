@@ -1,8 +1,10 @@
 import path from "path";
-import { cmake_build_preset } from "./lib/cmake";
+import { build_dependency } from "./lib/build";
+import { bundle_dependency } from "./lib/bundle";
+import { deploy_dependency } from "./lib/deploy";
 import { log } from "./lib/log";
 import { fs } from "zx";
-// import { deps_sync } from "./lib/deps";
+import { load_prebuild_config } from "./lib/config";
 
 // # TODO
 // # (done) Be able to build for OSX.
@@ -13,6 +15,8 @@ import { fs } from "zx";
 // # Be able to upload the package to a remote server.
 // # Integrate with the CI / CD pipeline.
 
+///////////////////////////////////////////////////////////////////////////////
+
 function findRepoRoot(startDir: string): string {
     let dir = startDir;
     while (dir !== path.parse(dir).root) {
@@ -21,6 +25,8 @@ function findRepoRoot(startDir: string): string {
     }
     throw new Error("Could not find repo root (CMakeLists.txt not found).");
 }
+
+///////////////////////////////////////////////////////////////////////////////
 
 // Setup mimi and external dependencies.
 function setup(argv: string[]) {
@@ -37,129 +43,13 @@ function setup(argv: string[]) {
     // deps_sync(rootDir, "macos-arm64-clang17");
 }
 
-// // Generate project files.
-// function gen_proj(argv: string[]) {
-//     if (argv.length !== 5) {
-//         log.err("Usage: mimi gen_proj <app_target> <build_target>");
-//         process.exit(1);
-//     }
-
-//     const rootDir = findRepoRoot(process.cwd());
-//     const app_target = argv[3];
-//     const build_target = argv[4];
-
-//     log.info(`Generating project for ${app_target} ${build_target}...`);
-//     log.info(`> Root: ${rootDir}`);
-//     log.info(`> App Target: ${app_target}`);
-//     log.info(`> Build Target: ${build_target}`);
-
-//     cmake_configure_with_preset(rootDir, app_target, build_target);
-// }
-
-// // Build app target.
-// function build_app(argv: string[]) {
-//     if (argv.length !== 6) {
-//         log.err("Usage: mimi build <app_target> <build_target> <build_type>");
-//         process.exit(1);
-//     }
-
-//     const rootDir = findRepoRoot(process.cwd());
-//     const app_target = argv[3];
-//     const build_target = argv[4];
-//     const build_type = argv[5];
-
-//     log.info(`Building ${app_target} ${build_target} ${build_type}...`);
-//     log.info(`> Root: ${rootDir}`);
-//     log.info(`> App Target: ${app_target}`);
-//     log.info(`> Build Target: ${build_target}`);
-//     log.info(`> Build Type: ${build_type}`);
-
-//     cmake_build_app(rootDir, app_target, build_target, build_type);
-// }
-
-// // Run tests.
-// function run_tests(argv: string[]) {
-//     if (argv.length !== 4) {
-//         log.err("Usage: mimi run_tests <build_type>");
-//         process.exit(1);
-//     }
-
-//     const rootDir = findRepoRoot(process.cwd());
-//     const build_type = argv[3];
-
-//     log.info(`Running tests ${build_type}...`);
-//     log.info(`> Root: ${rootDir}`);
-//     log.info(`> Build Type: ${build_type}`);
-
-//     cmake_run_tests(rootDir, build_type);
-// }
-
-// // Run web server.
-// function run_web_server(argv: string[]) {
-//     if (argv.length !== 5) {
-//         log.err("Usage: mimi run_web_server <app_target> <build_type>");
-//         process.exit(1);
-//     }
-
-//     const rootDir = findRepoRoot(process.cwd());
-//     const app_target = argv[3];
-//     const build_type = argv[4];
-
-//     log.info(`Running web server...`);
-//     log.info(`> Root: ${rootDir}`);
-//     log.info(`> App Target: ${app_target}`);
-//     log.info(`> Build Type: ${build_type}`);
-
-//     em_run_web_server(rootDir, app_target, build_type);
-// }
-
-
-
-
-
-
-// Build.
-function build_dep(argv: string[]) {
-    if (argv.length !== 5) {
-        log.err("Usage: prebuild-cli build <build_target> <build_type>");
-        process.exit(1);
-    }
-
-    const rootDir = findRepoRoot(process.cwd());
-    const build_type = argv[3];
-
-    log.info(`Building ${build_type}...`);
-    log.info(`> Root: ${rootDir}`);
-    log.info(`> Build Type: ${build_type}`);
-
-    cmake_build_preset(rootDir, build_type);
-    
-    // TODO
-    // * Generate manifest with information (name, version, ABI hash, etc.).
-    // * Package the build output (static libs, headers, licenses, etc.).
-    // * Upload the package to a remote server.
-
-
-//     pushd ${OUTPUT_DIR}
-//     PREBUILT_DIR="${NAME}-${VERSION}-${ABI_HASH}"
-//     mkdir -p "${PREBUILT_DIR}"
-
-//     cp -rf ${ROOT}/dependencies/glfw/LICENSE.md ${PREBUILT_DIR}/LICENSE.md
-//     cp -rf ${ROOT}/dependencies/glfw/include/* ${PREBUILT_DIR}/include
-//     cp -rf ${LIB_DIR}/${BUILD_TYPE} ${PREBUILT_DIR}/libs
-
-//     zip -r ${PREBUILT_DIR}.zip ${PREBUILT_DIR}
-// popd
-
-}
-
 // Clean temporary build directories.
 function clean() {
     const rootDir = findRepoRoot(process.cwd());
     log.info(`Cleaning...`);
     log.info(`> Root: ${rootDir}`);
 
-    const dirs = ["build", "projects"];
+    const dirs = ["build", "projects", "bundles"];
     for (const dir of dirs) {
         const full = path.join(rootDir, dir);
         if (fs.existsSync(full)) {
@@ -169,14 +59,75 @@ function clean() {
     }
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
+// Build.
+function build(argv: string[]) {
+    if (argv.length !== 4) {
+        log.err("Usage: prebuild-cli build <config_name>");
+        process.exit(1);
+    }
+    const configName = argv[3];
+
+    const rootDir = findRepoRoot(process.cwd());
+    const config = load_prebuild_config(rootDir, configName);
+    if (!config) {
+        log.err(`Config ${configName} not found in manifest.`);
+        process.exit(1);
+    }
+
+    build_dependency(rootDir, config);
+}
+
+// Bundle.
+function bundle(argv: string[]) {
+    if (argv.length !== 4) {
+        log.err("Usage: prebuild-cli bundle <config_name>");
+        process.exit(1);
+    }
+    const configName = argv[3];
+
+    const rootDir = findRepoRoot(process.cwd());
+    const config = load_prebuild_config(rootDir, configName);
+    if (!config) {
+        log.err(`Config ${configName} not found in manifest.`);
+        process.exit(1);
+    }
+
+    bundle_dependency(rootDir, config);
+}
+
+// Deploy.
+function deploy(argv: string[]) {
+    if (argv.length !== 4) {
+        log.err("Usage: prebuild-cli deploy <config_name>");
+        process.exit(1);
+    }
+    const configName = argv[3];
+    const rootDir = findRepoRoot(process.cwd());
+    const config = load_prebuild_config(rootDir, configName);
+    if (!config) {
+        log.err(`Config ${configName} not found in manifest.`);
+        process.exit(1);
+    }
+
+    deploy_dependency(rootDir, config);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 // Process command line arguments.
 const command = process.argv[2];
 if (command === "setup") {
     setup(process.argv);
-} else if (command === "build_dep") {
-    build_dep(process.argv);
 } else if (command === "clean") {
     clean();
+} else if (command === "build") {
+    build(process.argv);
+} else if (command === "bundle") {
+    bundle(process.argv);
+} else if (command === "deploy") {
+    deploy(process.argv);
 } else {
     log.err(`Unknown command: ${command}`);
     process.exit(1);
