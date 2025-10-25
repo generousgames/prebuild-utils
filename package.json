@@ -1,0 +1,28 @@
+{
+    "name": "@generousgames/prebuild-utils",
+    "version": "0.1.0",
+    "type": "module",
+    "private": true,
+    "bin": {
+        "prebuild-cli": "dist/main.js"
+    },
+    "scripts": {
+        "dev": "tsx src/main.ts",
+        "build_dep": "tsc -p tsconfig.json",
+        "check": "tsc -p tsconfig.json --noEmit",
+        "clean": "rimraf dist || rm -rf dist",
+        "abi": "tsx src/lib/abi.ts"
+    },
+    "dependencies": {
+        "adm-zip": "^0.5.16",
+        "axios": "^1.12.2",
+        "colorette": "^2.0.20",
+        "shasum": "^1.0.2",
+        "zx": "^8.8.4"
+    },
+    "devDependencies": {
+        "@types/node": "^22.7.4",
+        "tsx": "^4.19.0",
+        "typescript": "^5.6.3"
+    }
+}
