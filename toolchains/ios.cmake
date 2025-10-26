@@ -22,21 +22,18 @@ set(CMAKE_SYSTEM_NAME iOS)
 # (Optional) Prevent try-compile from attempting to run built binaries.
 set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
 
-# Prefer Ninja for macOS; but for iOS the Xcode generator is simplest/most compatible.
-# If the user passed a generator, don't override it.
+# Check that the required variables are set.
+if(NOT CMAKE_OSX_ARCHITECTURES)
+  message(ERROR "CMAKE_OSX_ARCHITECTURES is not set")
+endif()
+if(NOT CMAKE_OSX_DEPLOYMENT_TARGET)
+  message(ERROR "CMAKE_OSX_DEPLOYMENT_TARGET is not set")
+endif()
 
 # Common defaults; can be overridden by presets/CLI.
 if(NOT CMAKE_OSX_SYSROOT)
   # Choose device by default; presets should set explicitly.
   set(CMAKE_OSX_SYSROOT iphoneos CACHE STRING "iOS SDK to use")
-endif()
-
-if(NOT CMAKE_OSX_ARCHITECTURES)
-  set(CMAKE_OSX_ARCHITECTURES "arm64" CACHE STRING "Architectures")
-endif()
-
-if(NOT CMAKE_OSX_DEPLOYMENT_TARGET)
-  set(CMAKE_OSX_DEPLOYMENT_TARGET "13.0" CACHE STRING "iOS deployment target")
 endif()
 
 # Build static libs by default for prebuilts.

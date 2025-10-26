@@ -9,11 +9,11 @@ import shasum from "shasum";
 export type AbiInfo = {
     c_compiler: string;
     cxx_compiler: string;
-    os: string;
     arch: string;
     stdlib: string;
     cxx_std: string;
     cxx_flags: string;
+    build_type: string;
 };
 
 /**
@@ -22,8 +22,8 @@ export type AbiInfo = {
  * @returns The ABI fingerprint.
  */
 function generate_abi_fingerprint(abi_info: AbiInfo) {
-    const { c_compiler, cxx_compiler, os, arch, stdlib, cxx_std, cxx_flags } = abi_info;
-    return `${c_compiler}|${cxx_compiler}|${os}|${arch}|${stdlib}|${cxx_std}|${cxx_flags}`;
+    const { c_compiler, cxx_compiler, arch, stdlib, cxx_std, cxx_flags, build_type } = abi_info;
+    return `${c_compiler}|${cxx_compiler}|${arch}|${stdlib}|${cxx_std}|${cxx_flags}|${build_type}`;
 }
 
 /**

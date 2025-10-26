@@ -1,6 +1,11 @@
 import { PrebuildConfig, print_prebuild_config } from "./config.js";
 import { log } from "./log.js";
 
+/**
+ * Deploys the dependency given a CMake preset name.
+ * @param rootDir - The root directory of the repository.
+ * @param config - The configuration for the dependency.
+ */
 export async function deploy_dependency(rootDir: string, config: PrebuildConfig) {
 
     log.info("Deploying dependency...");

@@ -18,13 +18,12 @@
 # Tell CMake the host system (native build).
 set(CMAKE_SYSTEM_NAME Darwin)
 
-# Defaults; presets/CLI should override as needed.
+# Check that the required variables are set.
 if(NOT CMAKE_OSX_ARCHITECTURES)
-  set(CMAKE_OSX_ARCHITECTURES "arm64" CACHE STRING "Architectures")
+  message(FATAL_ERROR "CMAKE_OSX_ARCHITECTURES is not set")
 endif()
-
 if(NOT CMAKE_OSX_DEPLOYMENT_TARGET)
-  set(CMAKE_OSX_DEPLOYMENT_TARGET "12.0" CACHE STRING "macOS deployment target")
+  message(FATAL_ERROR "CMAKE_OSX_DEPLOYMENT_TARGET is not set")
 endif()
 
 # Prefer static libs for SDK-style prebuilts; can be overridden.
