@@ -2,7 +2,7 @@ import path from "path";
 import { fs } from "zx";
 import { log } from "./log";
 
-const MANIFEST_FILE = "manifest.json";
+const PREBUILD_CONFIG_FILE = "prebuild.json";
 
 export type PlatformType = "macos" | "ios" | "windows" | "linux";
 export type ArchType = "arm64" | "x86_64";
@@ -60,17 +60,17 @@ export type PrebuildConfig = {
 };
 
 export function load_prebuild_config(rootDir: string, presetName: string): PrebuildConfig | undefined {
-    const manifest = path.join(rootDir, MANIFEST_FILE);
-    if (!fs.existsSync(manifest)) {
-        log.err("Manifest file not found.");
+    const prebuild = path.join(rootDir, PREBUILD_CONFIG_FILE);
+    if (!fs.existsSync(prebuild)) {
+        log.err("Prebuild config file not found.");
         process.exit(1);
     }
-    const manifestJson = JSON.parse(fs.readFileSync(manifest, "utf8"));
+    const prebuildJson = JSON.parse(fs.readFileSync(prebuild, "utf8"));
 
     return {
-        name: manifestJson.name,
-        version: manifestJson.version,
-        ...manifestJson.configs[presetName],
+        name: prebuildJson.name,
+        version: prebuildJson.version,
+        ...prebuildJson.configs[presetName],
     }
 }
 
