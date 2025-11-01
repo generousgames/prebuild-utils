@@ -1,6 +1,5 @@
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import fs from "node:fs";
-import { log } from "./log";
 
 export async function putObjectFile(
   bucket: string,
