@@ -1,4 +1,4 @@
-import { PrebuildConfig, print_prebuild_config } from "./config.js";
+import { get_platform_triplet, BuildConfig, print_build_config } from "./config.js";
 import { run, ensureTool } from "./exec.js";
 import { log } from "./log.js";
 
@@ -7,24 +7,25 @@ import { log } from "./log.js";
  * @param rootDir - The root directory of the repository.
  * @param config - The configuration for the dependency.
  */
-export async function build_dependency(rootDir: string, config: PrebuildConfig) {
-    const { cmake_preset, target, compiler } = config;
+export async function build_dependency(rootDir: string, config: BuildConfig) {
+    const { platform, compiler } = config;
+    const triplet = get_platform_triplet(platform);
 
-    log.info("Building dependency...");
-    print_prebuild_config(config);
+    print_build_config(config);
 
     const env = {
         ...process.env,
-        PREBUILD_ARCH: target.arch,
+        BUILD_ARCH: platform.arch,
+        BUILD_TYPE: platform.build_type,
     } as Record<string, string>;
 
-    if (target.type === "macos") {
-        env["PREBUILD_OSX_DEPLOYMENT_TARGET"] = compiler.build?.deployment_target ?? "";
-    } else if (target.type === "ios") {
-        env["PREBUILD_IOS_DEPLOYMENT_TARGET"] = compiler.build?.deployment_target ?? "";
+    if (platform.os === "macos") {
+        env["BUILD_OSX_DEPLOYMENT_TARGET"] = compiler.build?.deployment_target ?? "";
+    } else if (platform.os === "ios") {
+        env["BUILD_IOS_DEPLOYMENT_TARGET"] = compiler.build?.deployment_target ?? "";
     }
 
     await ensureTool("cmake");
-    await run("cmake", ["--preset", cmake_preset], { cwd: rootDir, env });
-    await run("cmake", ["--build", `projects/${cmake_preset}`, "--config", target.build_type, "--parallel"], { cwd: rootDir, env });
+    await run("cmake", ["--preset", triplet], { cwd: rootDir, env });
+    await run("cmake", ["--build", `projects/${triplet}`, "--config", platform.build_type, "--parallel"], { cwd: rootDir, env });
 }

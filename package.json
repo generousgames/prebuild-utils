@@ -14,10 +14,13 @@
         "abi": "tsx src/lib/abi.ts"
     },
     "dependencies": {
+        "@aws-sdk/client-s3": "^3.922.0",
+        "@aws-sdk/lib-storage": "^3.922.0",
         "adm-zip": "^0.5.16",
         "archiver": "^7.0.1",
         "axios": "^1.12.2",
         "colorette": "^2.0.20",
+        "mime": "^4.1.0",
         "shasum": "^1.0.2",
         "zx": "^8.8.4"
     },

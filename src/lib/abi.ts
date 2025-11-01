@@ -2,6 +2,7 @@ import { fs } from "zx";
 import { run, ensureTool } from "./exec.js";
 import { log } from "./log.js";
 import shasum from "shasum";
+import { BuildConfig } from "./config.js";
 
 /**
  * ABI information.
@@ -15,6 +16,24 @@ export type AbiInfo = {
     cxx_flags: string;
     build_type: string;
 };
+
+/**
+ * Generate ABI information from the given configuration.
+ * @param config - The configuration.
+ * @returns The ABI information.
+ */
+export function generate_abi_from_config(config: BuildConfig): AbiInfo {
+    const { platform, compiler } = config;
+    return {
+        c_compiler: compiler.c_compiler,
+        cxx_compiler: compiler.cxx_compiler,
+        stdlib: compiler.stdlib,
+        cxx_std: compiler.cxx_std,
+        cxx_flags: compiler.cxx_flags,
+        arch: platform.arch,
+        build_type: platform.build_type,
+    };
+}
 
 /**
  * Generate an ABI fingerprint from the given ABI information.

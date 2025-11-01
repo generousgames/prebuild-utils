@@ -4,7 +4,7 @@ import { bundle_dependency } from "./lib/bundle";
 import { deploy_dependency } from "./lib/deploy";
 import { log } from "./lib/log";
 import { fs } from "zx";
-import { load_prebuild_config } from "./lib/config";
+import { load_build_config } from "./lib/config";
 
 // # TODO
 // # (done) Be able to build for OSX.
@@ -70,7 +70,7 @@ function build(argv: string[]) {
     const configName = argv[3];
 
     const rootDir = findRepoRoot(process.cwd());
-    const config = load_prebuild_config(rootDir, configName);
+    const config = load_build_config(rootDir, configName);
     if (!config) {
         log.err(`Config ${configName} not found in manifest.`);
         process.exit(1);
@@ -88,7 +88,7 @@ function bundle(argv: string[]) {
     const configName = argv[3];
 
     const rootDir = findRepoRoot(process.cwd());
-    const config = load_prebuild_config(rootDir, configName);
+    const config = load_build_config(rootDir, configName);
     if (!config) {
         log.err(`Config ${configName} not found in manifest.`);
         process.exit(1);
@@ -105,7 +105,7 @@ function deploy(argv: string[]) {
     }
     const configName = argv[3];
     const rootDir = findRepoRoot(process.cwd());
-    const config = load_prebuild_config(rootDir, configName);
+    const config = load_build_config(rootDir, configName);
     if (!config) {
         log.err(`Config ${configName} not found in manifest.`);
         process.exit(1);

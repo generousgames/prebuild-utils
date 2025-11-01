@@ -1,19 +1,35 @@
-import { PrebuildConfig, print_prebuild_config } from "./config.js";
+import path from "path";
+import { get_platform_triplet, BuildConfig, print_build_config } from "./config.js";
 import { log } from "./log.js";
+import { generate_abi_from_config, generate_abi_hash } from "./abi.js";
+import { putObjectFile } from "./s3.js";
 
 /**
  * Deploys the dependency given a CMake preset name.
  * @param rootDir - The root directory of the repository.
  * @param config - The configuration for the dependency.
  */
-export async function deploy_dependency(rootDir: string, config: PrebuildConfig) {
+export async function deploy_dependency(rootDir: string, config: BuildConfig) {
+    const { platform } = config;
+    const triplet = get_platform_triplet(platform);
 
     log.info("Deploying dependency...");
-    print_prebuild_config(config);
+    print_build_config(config);
 
-    // await ensureTool("cmake");
-    // await run("cmake", ["--preset", presetName], { cwd: rootDir });
-    // await run("cmake", ["--build", `projects/${presetName}`, "--parallel"], { cwd: rootDir });
+    const abi = generate_abi_from_config(config);
+    const hash = generate_abi_hash(abi);
+    const bundleDir = path.join(rootDir, "bundles", triplet);
+    const fileName = `${config.name}-${config.version}-${hash}.zip`;
+    const archiveFile = path.join(bundleDir, `${config.name}-${config.version}-${hash}.zip`);
+
+    const zipPath = path.resolve(`deps/${triplet}/${config.name}`, fileName);
+    await putObjectFile("gg.mimi", archiveFile, zipPath, {
+        cacheControl: "public, max-age=31536000, immutable",
+        contentType: "application/zip",
+        region: "us-east-1",
+        accessKeyId: "AKIAIOSFODNN7EXAMPLE",
+        secretAccessKey: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+    });
 }
 
 // export async function cmake_build_app(rootDir: string, appTarget: string, buildTarget: string, buildType: string) {

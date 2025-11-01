@@ -1,6 +1,6 @@
-import { generate_abi_hash, generate_abi_short_hash, print_abi_info } from "./abi.js";
+import { generate_abi_from_config, generate_abi_hash, generate_abi_short_hash, print_abi_info } from "./abi.js";
 import { log } from "./log.js";
-import { PrebuildConfig, print_prebuild_config } from "./config.js";
+import { get_platform_triplet, BuildConfig, print_build_config } from "./config.js";
 import { generate_manifest } from "./manifest.js";
 import archiver from "archiver";
 import { fs, path } from "zx";
@@ -42,27 +42,20 @@ export async function zipDir(inputDir: string, outZipPath: string) {
  * @param rootDir - The root directory of the repository.
  * @param config - The configuration for the dependency.
  */
-export async function bundle_dependency(rootDir: string, config: PrebuildConfig) {
-    const { cmake_preset, target, compiler } = config;
+export async function bundle_dependency(rootDir: string, config: BuildConfig) {
+    const { platform } = config;
+    const triplet = get_platform_triplet(platform);
 
-    const abi = {
-        c_compiler: compiler.c_compiler,
-        cxx_compiler: compiler.cxx_compiler,
-        arch: target.arch,
-        stdlib: compiler.stdlib,
-        cxx_std: compiler.cxx_std,
-        cxx_flags: compiler.cxx_flags,
-        build_type: target.build_type,
-    };
+    const abi = generate_abi_from_config(config);
 
     log.info("Bundling dependency...");
-    print_prebuild_config(config);
+    print_build_config(config);
     print_abi_info(abi);
 
     // Create folder rootDir/bundles/presetName.
     const fs = await import("fs");
     const path = await import("path");
-    const bundleDir = path.join(rootDir, "bundles", cmake_preset);
+    const bundleDir = path.join(rootDir, "bundles", triplet);
     const contentsDir = path.join(bundleDir, "contents");
     fs.rmSync(contentsDir, { recursive: true, force: true });
     if (!fs.existsSync(contentsDir)) {
@@ -78,7 +71,7 @@ export async function bundle_dependency(rootDir: string, config: PrebuildConfig)
     fs.cpSync(headersDir, path.join(contentsDir, "include"), { recursive: true });
 
     // Copy static libs.
-    const staticLibsDir = path.join(rootDir, "build", "lib", target.build_type);
+    const staticLibsDir = path.join(rootDir, "build", "lib", platform.build_type);
     fs.cpSync(staticLibsDir, path.join(contentsDir, "libs"), { recursive: true });
 
     // Create manifest.

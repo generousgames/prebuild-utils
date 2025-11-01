@@ -2,15 +2,15 @@ import path from "path";
 import { fs } from "zx";
 import { log } from "./log";
 
-const PREBUILD_CONFIG_FILE = "prebuild.json";
+const BUILD_CONFIG_FILE = "build.json";
 
-export type PlatformType = "macos" | "ios" | "windows" | "linux";
+export type OSType = "macos" | "ios" | "windows" | "linux";
 export type ArchType = "arm64" | "x86_64";
 export type BuildType = "Release" | "Debug";
 
-export type TargetConfig = {
-    // The platform type.
-    type: PlatformType;
+export type PlatformConfig = {
+    // The operating system.
+    os: OSType;
 
     // The architecture to build for.
     arch: ArchType;
@@ -43,49 +43,65 @@ export type CompilerConfig = {
     build?: OSXBuildConfig | iOSBuildConfig;
 };
 
-export type PrebuildConfig = {
+export type BuildConfig = {
     // The name of the dependency.
     name: string;
     // The version of the dependency.
     version: string;
 
-    // The CMake preset to use.
-    cmake_preset: string;
-
-    // The target configuration.
-    target: TargetConfig;
+    // The platform configuration.
+    platform: PlatformConfig;
 
     // The compiler configuration.
     compiler: CompilerConfig;
 };
 
-export function load_prebuild_config(rootDir: string, presetName: string): PrebuildConfig | undefined {
-    const prebuild = path.join(rootDir, PREBUILD_CONFIG_FILE);
-    if (!fs.existsSync(prebuild)) {
-        log.err("Prebuild config file not found.");
+/**
+ * Get the triplet for the given platform.
+ * @param platform - The platform configuration.
+ * @returns The triplet.
+ */
+export function get_platform_triplet(platform: PlatformConfig): string {
+    return `${platform.os}-${platform.arch}-${platform.build_type}`;
+}
+
+/**
+ * Load the build configuration from the given root directory.
+ * @param rootDir - The root directory of the repository.
+ * @param presetName - The name of the preset to load.
+ * @returns The build configuration.
+ */
+export function load_build_config(rootDir: string, presetName: string): BuildConfig | undefined {
+    const build = path.join(rootDir, BUILD_CONFIG_FILE);
+    if (!fs.existsSync(build)) {
+        log.err("Build config file not found.");
         process.exit(1);
     }
-    const prebuildJson = JSON.parse(fs.readFileSync(prebuild, "utf8"));
+    const buildJson = JSON.parse(fs.readFileSync(build, "utf8"));
 
     return {
-        name: prebuildJson.name,
-        version: prebuildJson.version,
-        ...prebuildJson.configs[presetName],
+        name: buildJson.name,
+        version: buildJson.version,
+        ...buildJson.configs[presetName],
     }
 }
 
-export function print_prebuild_config(config: PrebuildConfig) {
-    log.info(`> ${config.name}: ${config.version}`);
-    log.info(`> CMake Preset: ${config.cmake_preset}`);
-    log.info(`> Platform: ${config.target.type}`);
-    log.info(`> Arch: ${config.target.arch}`);
-    log.info(`> Build Type: ${config.target.build_type}`);
+/**
+ * Print the build configuration.
+ * @param config - The build configuration.
+ */
+export function print_build_config(config: BuildConfig) {
+    log.info(`${config.name} ${config.version}`);
+    log.info(`> Platform: ${get_platform_triplet(config.platform)}`);
     log.info(`> C Compiler: ${config.compiler.c_compiler}`);
     log.info(`> C++ Compiler: ${config.compiler.cxx_compiler}`);
     log.info(`> Stdlib: ${config.compiler.stdlib}`);
     log.info(`> C++ Std: ${config.compiler.cxx_std}`);
     log.info(`> C++ Flags: ${config.compiler.cxx_flags}`);
-    if (config.compiler.build && config.target.type === "macos") {
-        log.info(`> OSX Deployment Target: ${config.compiler.build.deployment_target}`);
+    if (config.compiler.build && config.platform.os === "macos") {
+        log.info(`> macOS Deployment Target: ${config.compiler.build.deployment_target}`);
+    }
+    if (config.compiler.build && config.platform.os === "ios") {
+        log.info(`> iOS Deployment Target: ${config.compiler.build.deployment_target}`);
     }
 }
