@@ -16,18 +16,25 @@ export async function deploy_dependency(rootDir: string, config: BuildConfig) {
     log.info("Deploying dependency...");
     print_build_config(config);
 
-    const abi = generate_abi_from_config(config);
-    const hash = generate_abi_hash(abi);
-    const bundleDir = path.join(rootDir, "bundles", triplet);
-    const fileName = `${config.name}-${config.version}-${hash}.zip`;
-    const archiveFile = path.join(bundleDir, `${config.name}-${config.version}-${hash}.zip`);
+    try {
+        const abi = generate_abi_from_config(config);
+        const hash = generate_abi_hash(abi);
+        const bundleDir = path.join(rootDir, "bundles", triplet);
+        const fileName = `${config.name}-${config.version}-${hash}.zip`;
+        const archiveFile = path.join(bundleDir, `${config.name}-${config.version}-${hash}.zip`);
 
-    const zipPath = path.resolve(`deps/${triplet}/${config.name}`, fileName);
-    await putObjectFile("gg.mimi", archiveFile, zipPath, {
-        cacheControl: "public, max-age=31536000, immutable",
-        contentType: "application/zip",
-        region: "us-east-1",
-        accessKeyId: "AKIAIOSFODNN7EXAMPLE",
-        secretAccessKey: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-    });
+        const zipPath = path.resolve(`deps/${triplet}/${config.name}`, fileName);
+        await putObjectFile("gg.mimi", archiveFile, zipPath, {
+            cacheControl: "public, max-age=31536000, immutable",
+            contentType: "application/zip",
+            region: "us-east-1",
+            accessKeyId: "AKIAIOSFODNN7EXAMPLE",
+            secretAccessKey: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+        });
+
+        log.ok(`Deployed ${config.name}(${config.version})`);
+    } catch (error) {
+        log.err(`Failed to deploy ${config.name}(${config.version})`);
+        throw error;
+    }
 }

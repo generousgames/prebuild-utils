@@ -70,10 +70,8 @@ export function generate_abi_short_hash(abi_info: AbiInfo, bytes: number = 8) {
 export function print_abi_info(abi_info: AbiInfo) {
     const fingerprint = generate_abi_fingerprint(abi_info);
     const abi_hash = generate_abi_hash(abi_info);
-    const abi_hash_short = generate_abi_short_hash(abi_info);
 
-    log.info(`ABI information...`);
+    log.info(`ABI`);
     log.info(`> Fingerprint: ${fingerprint}`);
     log.info(`> Hash: ${abi_hash}`);
-    log.info(`> Hash (short): ${abi_hash_short}`);
 }

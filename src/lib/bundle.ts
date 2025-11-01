@@ -48,40 +48,46 @@ export async function bundle_dependency(rootDir: string, config: BuildConfig) {
 
     const abi = generate_abi_from_config(config);
 
-    log.info("Bundling dependency...");
     print_build_config(config);
     print_abi_info(abi);
 
-    // Create folder rootDir/bundles/presetName.
-    const fs = await import("fs");
-    const path = await import("path");
-    const bundleDir = path.join(rootDir, "bundles", triplet);
-    const contentsDir = path.join(bundleDir, "contents");
-    fs.rmSync(contentsDir, { recursive: true, force: true });
-    if (!fs.existsSync(contentsDir)) {
-        fs.mkdirSync(contentsDir, { recursive: true });
+    try {
+        // Create folder rootDir/bundles/presetName.
+        const fs = await import("fs");
+        const path = await import("path");
+        const bundleDir = path.join(rootDir, "bundles", triplet);
+        const contentsDir = path.join(bundleDir, "contents");
+        fs.rmSync(contentsDir, { recursive: true, force: true });
+        if (!fs.existsSync(contentsDir)) {
+            fs.mkdirSync(contentsDir, { recursive: true });
+        }
+
+        // Copy license file.
+        const licenseFile = path.join(rootDir, "dependencies", "glfw", "LICENSE.md");
+        fs.copyFileSync(licenseFile, path.join(contentsDir, "LICENSE.md"));
+
+        // Copy headers.
+        const headersDir = path.join(rootDir, "dependencies", "glfw", "include");
+        fs.cpSync(headersDir, path.join(contentsDir, "include"), { recursive: true });
+
+        // Copy static libs.
+        const staticLibsDir = path.join(rootDir, "build", "lib", platform.build_type);
+        fs.cpSync(staticLibsDir, path.join(contentsDir, "libs"), { recursive: true });
+
+        // Create manifest.
+        const hash = generate_abi_hash(abi);
+        const manifest = generate_manifest(config, hash);
+        fs.writeFileSync(path.join(contentsDir, "manifest.json"), JSON.stringify(manifest, null, 2));
+
+        // Create archive.
+        const archiveFile = path.join(bundleDir, `${config.name}-${config.version}-${hash}.zip`);
+
+        // Zip the bundle directory into the archive file.
+        await zipDir(contentsDir, archiveFile);
+
+        log.ok(`Bundled ${config.name}(${config.version}) into ${archiveFile}`);
+    } catch (error) {
+        log.err(`Failed to bundle ${config.name}(${config.version})`);
+        throw error;
     }
-
-    // Copy license file.
-    const licenseFile = path.join(rootDir, "dependencies", "glfw", "LICENSE.md");
-    fs.copyFileSync(licenseFile, path.join(contentsDir, "LICENSE.md"));
-
-    // Copy headers.
-    const headersDir = path.join(rootDir, "dependencies", "glfw", "include");
-    fs.cpSync(headersDir, path.join(contentsDir, "include"), { recursive: true });
-
-    // Copy static libs.
-    const staticLibsDir = path.join(rootDir, "build", "lib", platform.build_type);
-    fs.cpSync(staticLibsDir, path.join(contentsDir, "libs"), { recursive: true });
-
-    // Create manifest.
-    const hash = generate_abi_hash(abi);
-    const manifest = generate_manifest(config, hash);
-    fs.writeFileSync(path.join(contentsDir, "manifest.json"), JSON.stringify(manifest, null, 2));
-
-    // Create archive.
-    const archiveFile = path.join(bundleDir, `${config.name}-${config.version}-${hash}.zip`);
-
-    // Zip the bundle directory into the archive file.
-    await zipDir(contentsDir, archiveFile);
 }

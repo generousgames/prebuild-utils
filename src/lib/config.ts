@@ -91,7 +91,7 @@ export function load_build_config(rootDir: string, presetName: string): BuildCon
  * @param config - The build configuration.
  */
 export function print_build_config(config: BuildConfig) {
-    log.info(`${config.name} ${config.version}`);
+    log.info(`${config.name}(${config.version})`);
     log.info(`> Platform: ${get_platform_triplet(config.platform)}`);
     log.info(`> C Compiler: ${config.compiler.c_compiler}`);
     log.info(`> C++ Compiler: ${config.compiler.cxx_compiler}`);

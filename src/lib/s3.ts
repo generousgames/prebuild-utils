@@ -10,26 +10,19 @@ export async function putObjectFile(
 ) {
   const Body = fs.createReadStream(filePath);
 
-  try {
-    const client = new S3Client({
-      region: opts.region,
-      credentials: opts.accessKeyId && opts.secretAccessKey
-        ? { accessKeyId: opts.accessKeyId, secretAccessKey: opts.secretAccessKey }
-        : undefined,
-    });
-    await client.send(
-      new PutObjectCommand({
-        Bucket: bucket,
-        Key: key,
-        Body,
-        ContentType: opts.contentType,
-        CacheControl: opts.cacheControl,
-      })
-    );
-    log.ok(`Uploaded s3://${bucket}/${key}`);
-  }
-  catch (error) {
-    log.err(`Failed to upload s3://${bucket}/${key}`);
-    throw error;
-  }
+  const client = new S3Client({
+    region: opts.region,
+    credentials: opts.accessKeyId && opts.secretAccessKey
+      ? { accessKeyId: opts.accessKeyId, secretAccessKey: opts.secretAccessKey }
+      : undefined,
+  });
+  await client.send(
+    new PutObjectCommand({
+      Bucket: bucket,
+      Key: key,
+      Body,
+      ContentType: opts.contentType,
+      CacheControl: opts.cacheControl,
+    })
+  );
 }
