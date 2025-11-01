@@ -1,6 +1,5 @@
 import { get_platform_triplet, BuildConfig, print_build_config } from "./config.js";
 import { run, ensureTool } from "./exec.js";
-import { log } from "./log.js";
 
 /**
  * Builds the dependency given a CMake preset name.

@@ -1,5 +1,3 @@
-import { fs } from "zx";
-import { run, ensureTool } from "./exec.js";
 import { log } from "./log.js";
 import shasum from "shasum";
 import { BuildConfig } from "./config.js";

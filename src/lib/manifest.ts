@@ -1,9 +1,6 @@
-import { PrebuildConfig } from "./config";
-import { fs } from "zx";
-import { log } from "./log";
-import { generate_abi_hash } from "./abi";
+import { BuildConfig } from "./config";
 
-export function generate_manifest(config: PrebuildConfig, hash: string) {
+export function generate_manifest(config: BuildConfig, hash: string) {
     return {
         name: config.name,
         version: config.version,
