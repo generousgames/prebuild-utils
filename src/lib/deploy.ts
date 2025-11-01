@@ -14,12 +14,12 @@ export type DeployConfig = {
  * @param config - The configuration for the dependency.
  * @returns The remote bucket path.
  */
-function get_remote_bucket_path(config: BuildConfig) {
+function get_remote_bucket_path(config: BuildConfig, uploadRoot: string) {
     const { platform, name } = config;
     const abi = generate_abi_from_config(config);
     const triplet = get_platform_triplet(platform);
     const fileName = get_bundle_filename(abi, config);
-    return path.join(`deps/${triplet}/${name}`, fileName);
+    return path.join(uploadRoot, `${triplet}/${name}`, fileName);
 }
 
 /**
@@ -28,11 +28,17 @@ function get_remote_bucket_path(config: BuildConfig) {
  * @param config - The configuration for the dependency.
  */
 export async function deploy_dependency(rootDir: string, config: BuildConfig) {
-    print_build_config(config);
+    // print_build_config(config);
 
     try {
-        if (!process.env.AWS_ACCESS_KEY_ID || !process.env.AWS_SECRET_ACCESS_KEY || !process.env.AWS_REGION) {
-            throw new Error("AWS credentials not set");
+        if (!process.env.AWS_ACCESS_KEY_ID || !process.env.AWS_SECRET_ACCESS_KEY) {
+            throw new Error("AWS credentials (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY) not set");
+        }
+        if (!process.env.AWS_REGION) {
+            throw new Error("AWS region (AWS_REGION) not set");
+        }
+        if (!process.env.AWS_S3_BUCKET || !process.env.AWS_S3_UPLOAD_ROOT) {
+            throw new Error("AWS S3 bucket (AWS_S3_BUCKET) or upload root (AWS_S3_UPLOAD_ROOT) not set");
         }
 
         const awsUploadCredentials: AWSUploadCredentials = {
@@ -47,10 +53,16 @@ export async function deploy_dependency(rootDir: string, config: BuildConfig) {
         };
 
         const localBundlePath = get_bundle_path(rootDir, config);
-        const remoteBucketPath = get_remote_bucket_path(config);
-        await s3_putObjectFile("gg.mimi", remoteBucketPath, localBundlePath, awsUploadOptions);
+        const remoteBucketPath = get_remote_bucket_path(config, process.env.AWS_S3_UPLOAD_ROOT);
 
-        log.ok(`Deployed to ${remoteBucketPath}`);
+        log.info(`Deploying to AWS S3...`);
+        log.info(`> Region: ${process.env.AWS_REGION}`);
+        log.info(`> Source: ${localBundlePath}`);
+        log.info(`> Destination: s3://${process.env.AWS_S3_BUCKET}/${remoteBucketPath}`);
+
+        await s3_putObjectFile(process.env.AWS_S3_BUCKET, remoteBucketPath, localBundlePath, awsUploadOptions);
+
+        log.ok(`Deployed successfully!`);
     } catch (error) {
         log.err(`Failed to deploy ${config.name}(${config.version})`);
         throw error;
