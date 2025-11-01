@@ -3,7 +3,7 @@ import shasum from "shasum";
 import { BuildConfig } from "./config.js";
 
 /**
- * ABI information.
+ * Application Binary Interface (ABI) definition.
  */
 export type AbiInfo = {
     c_compiler: string;

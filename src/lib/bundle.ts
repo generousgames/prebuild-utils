@@ -1,9 +1,45 @@
-import { generate_abi_from_config, generate_abi_hash, generate_abi_short_hash, print_abi_info } from "./abi.js";
+import { AbiInfo, generate_abi_from_config, generate_abi_hash, generate_abi_short_hash, print_abi_info } from "./abi.js";
 import { log } from "./log.js";
 import { get_platform_triplet, BuildConfig, print_build_config } from "./config.js";
 import { generate_manifest } from "./manifest.js";
 import archiver from "archiver";
 import { fs, path } from "zx";
+
+/**
+ * Gets the directory of the bundle.
+ * @param rootDir - The root directory of the repository.
+ * @param config - The configuration for the dependency.
+ * @returns The directory of the bundle.
+ */
+export function get_bundle_dir(rootDir: string, config: BuildConfig) {
+    const { platform } = config;
+    const triplet = get_platform_triplet(platform);
+    return path.join(rootDir, "bundles", triplet);
+}
+
+/**
+ * Gets the filename of the bundle.
+ * @param abi - The ABI information.
+ * @param config - The configuration for the dependency.
+ * @returns The filename of the bundle.
+ */
+export function get_bundle_filename(abi: AbiInfo, config: BuildConfig) {
+    const hash = generate_abi_hash(abi);
+    return `${config.name}-${config.version}-${hash}.zip`;
+}
+
+/**
+ * Gets the bundle path.
+ * @param rootDir - The root directory of the repository.
+ * @param config - The configuration for the dependency.
+ * @returns The bundle path.
+ */
+export function get_bundle_path(rootDir: string, config: BuildConfig) {
+    const abi = generate_abi_from_config(config);
+    const bundleDir = get_bundle_dir(rootDir, config);
+    const fileName = get_bundle_filename(abi, config);
+    return path.join(bundleDir, fileName);
+}
 
 /**
  * Zips a directory into a zip file.
@@ -55,7 +91,7 @@ export async function bundle_dependency(rootDir: string, config: BuildConfig) {
         // Create folder rootDir/bundles/presetName.
         const fs = await import("fs");
         const path = await import("path");
-        const bundleDir = path.join(rootDir, "bundles", triplet);
+        const bundleDir = get_bundle_dir(rootDir, config);
         const contentsDir = path.join(bundleDir, "contents");
         fs.rmSync(contentsDir, { recursive: true, force: true });
         if (!fs.existsSync(contentsDir)) {
@@ -79,13 +115,11 @@ export async function bundle_dependency(rootDir: string, config: BuildConfig) {
         const manifest = generate_manifest(config, hash);
         fs.writeFileSync(path.join(contentsDir, "manifest.json"), JSON.stringify(manifest, null, 2));
 
-        // Create archive.
-        const archiveFile = path.join(bundleDir, `${config.name}-${config.version}-${hash}.zip`);
+        // Create bundle.
+        const bundlePath = get_bundle_path(rootDir, config);
+        await zipDir(contentsDir, bundlePath);
 
-        // Zip the bundle directory into the archive file.
-        await zipDir(contentsDir, archiveFile);
-
-        log.ok(`Bundled ${config.name}(${config.version}) into ${archiveFile}`);
+        log.ok(`Bundled ${config.name}(${config.version}) into ${bundlePath}`);
     } catch (error) {
         log.err(`Failed to bundle ${config.name}(${config.version})`);
         throw error;

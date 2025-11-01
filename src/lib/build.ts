@@ -13,18 +13,20 @@ export async function build_dependency(rootDir: string, config: BuildConfig) {
 
     print_build_config(config);
 
-
     try {
         const env = {
             ...process.env,
+            BUILD_OS: platform.os,
             BUILD_ARCH: platform.arch,
             BUILD_TYPE: platform.build_type,
+            // TODO: Other compiler settings (eg. RTTI, exceptions, etc.).
+            // TODO: Other dependency specific flags (eg. GLFW_BUILD_EXAMPLES, GLFW_BUILD_DOCS, etc.).
         } as Record<string, string>;
 
         if (platform.os === "macos") {
-            env["BUILD_OSX_DEPLOYMENT_TARGET"] = compiler.build?.deployment_target ?? "";
+            env["BUILD_OSX_DEPLOYMENT_TARGET"] = compiler.options?.osx?.deployment_target ?? "";
         } else if (platform.os === "ios") {
-            env["BUILD_IOS_DEPLOYMENT_TARGET"] = compiler.build?.deployment_target ?? "";
+            env["BUILD_IOS_DEPLOYMENT_TARGET"] = compiler.options?.ios?.deployment_target ?? "";
         }
 
         await ensureTool("cmake");

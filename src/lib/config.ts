@@ -19,10 +19,10 @@ export type PlatformConfig = {
     build_type: BuildType;
 };
 
-export type OSXBuildConfig = {
+export type OSXBuildOptions = {
     deployment_target: string;
 };
-export type iOSBuildConfig = {
+export type iOSBuildOptions = {
     deployment_target: string;
 };
 
@@ -39,13 +39,17 @@ export type CompilerConfig = {
     // The C++ flags to use.
     cxx_flags: string;
 
-    // Additional build configuration.
-    build?: OSXBuildConfig | iOSBuildConfig;
+    // Additional options.
+    options?: {
+        osx?: OSXBuildOptions;
+        ios?: iOSBuildOptions;
+    };
 };
 
 export type BuildConfig = {
     // The name of the dependency.
     name: string;
+
     // The version of the dependency.
     version: string;
 
