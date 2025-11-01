@@ -80,12 +80,9 @@ export async function zipDir(inputDir: string, outZipPath: string) {
  */
 export async function bundle_dependency(rootDir: string, config: BuildConfig) {
     const { platform } = config;
-    const triplet = get_platform_triplet(platform);
 
-    const abi = generate_abi_from_config(config);
-
-    print_build_config(config);
-    print_abi_info(abi);
+    // print_build_config(config);
+    // print_abi_info(abi);
 
     try {
         // Create folder rootDir/bundles/presetName.
@@ -111,15 +108,20 @@ export async function bundle_dependency(rootDir: string, config: BuildConfig) {
         fs.cpSync(staticLibsDir, path.join(contentsDir, "libs"), { recursive: true });
 
         // Create manifest.
+        const abi = generate_abi_from_config(config);
         const hash = generate_abi_hash(abi);
         const manifest = generate_manifest(config, hash);
         fs.writeFileSync(path.join(contentsDir, "manifest.json"), JSON.stringify(manifest, null, 2));
 
         // Create bundle.
         const bundlePath = get_bundle_path(rootDir, config);
+        {
+            log.info(`Bundling ${config.name}(${config.version})...`);
+            log.info(`> Destination: ${bundlePath}`);
+        }
         await zipDir(contentsDir, bundlePath);
 
-        log.ok(`Bundled ${config.name}(${config.version}) into ${bundlePath}`);
+        log.ok(`Bundled successfully!`);
     } catch (error) {
         log.err(`Failed to bundle ${config.name}(${config.version})`);
         throw error;

@@ -9,9 +9,8 @@ import { log } from "./log.js";
  */
 export async function build_dependency(rootDir: string, config: BuildConfig) {
     const { platform, compiler } = config;
-    const triplet = get_platform_triplet(platform);
 
-    print_build_config(config);
+    // print_build_config(config);
 
     try {
         const env = {
@@ -23,17 +22,24 @@ export async function build_dependency(rootDir: string, config: BuildConfig) {
             // TODO: Other dependency specific flags (eg. GLFW_BUILD_EXAMPLES, GLFW_BUILD_DOCS, etc.).
         } as Record<string, string>;
 
+        const triplet = get_platform_triplet(platform);
+
+        log.info(`Building ${config.name}(${config.version})...`);
+        log.info(`> Platform: ${triplet}`);
+        log.info(`> Compiler: ${compiler.c_compiler} ${compiler.cxx_compiler} ${compiler.stdlib} ${compiler.cxx_std} ${compiler.cxx_flags}`);
         if (platform.os === "macos") {
             env["BUILD_OSX_DEPLOYMENT_TARGET"] = compiler.options?.osx?.deployment_target ?? "";
+            log.info(`> macOS Deployment Target: ${compiler.options?.osx?.deployment_target ?? ""}`);
         } else if (platform.os === "ios") {
             env["BUILD_IOS_DEPLOYMENT_TARGET"] = compiler.options?.ios?.deployment_target ?? "";
+            log.info(`> iOS Deployment Target: ${compiler.options?.ios?.deployment_target ?? ""}`);
         }
 
         await ensureTool("cmake");
         await run("cmake", ["--preset", triplet], { cwd: rootDir, env });
         await run("cmake", ["--build", `projects/${triplet}`, "--config", platform.build_type, "--parallel"], { cwd: rootDir, env });
 
-        log.ok(`Built ${config.name}(${config.version})`);
+        log.ok(`Built successfully!`);
     } catch (error) {
         log.err(`Failed to build ${config.name}(${config.version})`);
         throw error;
