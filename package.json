@@ -21,10 +21,12 @@
         "axios": "^1.12.2",
         "colorette": "^2.0.20",
         "mime": "^4.1.0",
+        "mustache": "^4.2.0",
         "shasum": "^1.0.2",
         "zx": "^8.8.4"
     },
     "devDependencies": {
+        "@types/mustache": "^4.2.6",
         "@types/node": "^22.7.4",
         "tsx": "^4.19.0",
         "typescript": "^5.6.3"
