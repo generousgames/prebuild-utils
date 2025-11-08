@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# (1) Exit on error
-# (2) Fail on unset variables
-# (3) Fail on pipe failure
+# (e) Exit on error
+# (u) Fail on unset variables
+# (o) Fail on pipe failure
 set -euo pipefail
 
 # Load nvm (path may vary!)

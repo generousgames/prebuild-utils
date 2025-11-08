@@ -25,9 +25,6 @@ endif()
 if(NOT CMAKE_OSX_DEPLOYMENT_TARGET)
   message(FATAL_ERROR "CMAKE_OSX_DEPLOYMENT_TARGET is not set")
 endif()
-if(NOT CMAKE_BUILD_TYPE)
-  message(FATAL_ERROR "CMAKE_BUILD_TYPE is not set")
-endif()
 
 # Prefer static libs for SDK-style prebuilts; can be overridden.
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build shared libraries")

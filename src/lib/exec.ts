@@ -1,7 +1,7 @@
 import { $, ProcessOutput } from "zx";
 import { log } from "./log.js";
 
-$.verbose = false;     // set true while debugging
+$.verbose = true;     // set true while debugging
 $.nothrow = true;     // we handle exit codes ourselves
 
 export async function run(cmd: string, args: (string | number)[], opts?: {
