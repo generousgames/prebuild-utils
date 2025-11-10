@@ -11,6 +11,13 @@ export type OptimizationLevel = "-O0" | "-O1" | "-O2" | "-O3" | "-Os" | "-Oz";
 export type Stdlib = "libc++" | "libstdc++";
 export type LinkType = "Static" | "Shared";
 
+export type PathsConfig = {
+    // The paths to the license files.
+    license_files?: string[];
+    // The directory to the header files.
+    header_dir?: string;
+};
+
 export type PlatformConfig = {
     // The operating system.
     os: OSType;
@@ -80,6 +87,9 @@ export type BuildConfig = {
     // The version of the dependency.
     version: string;
 
+    // The paths configuration.
+    paths: PathsConfig;
+
     // The platform configuration.
     platform: PlatformConfig;
 
@@ -125,6 +135,10 @@ export function load_build_config(rootDir: string, presetName: string): BuildCon
     return {
         name: buildJson.name,
         version: buildJson.version,
+        paths: {
+            license_files: buildJson.license_files ?? [],
+            header_dir: buildJson.header_dir ?? "",
+        },
         ...buildJson.configs[presetName],
     }
 }

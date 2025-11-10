@@ -7,6 +7,14 @@ import { fs, path } from "zx";
 import { generate_cmake_config } from "./cmake.js";
 
 /**
+ * Ensures a directory exists.
+ * @param p - The path to the directory.
+ */
+function ensureDir(p: string) {
+    fs.mkdirSync(p, { recursive: true });
+}
+
+/**
  * Gets the directory of the bundle.
  * @param rootDir - The root directory of the repository.
  * @param config - The configuration for the dependency.
@@ -92,26 +100,32 @@ export async function bundle_dependency(rootDir: string, config: BuildConfig) {
         const bundleDir = get_bundle_dir(rootDir, config);
         const contentsDir = path.join(bundleDir, "contents");
         fs.rmSync(contentsDir, { recursive: true, force: true });
-        if (!fs.existsSync(contentsDir)) {
-            fs.mkdirSync(contentsDir, { recursive: true });
+        ensureDir(contentsDir);
+
+        // Copy license files.
+        const licensesDir = path.join(contentsDir, "licenses");
+        ensureDir(licensesDir);
+        for (const licenseFile of config.paths.license_files) {
+            const srcPath = path.join(rootDir, licenseFile);
+            const destPath = path.join(licensesDir, path.basename(licenseFile));
+            fs.copyFileSync(srcPath, destPath);
         }
 
-        // Copy license file.
-        const licenseFile = path.join(rootDir, "dependencies", "glfw", "LICENSE.md");
-        fs.copyFileSync(licenseFile, path.join(contentsDir, "LICENSE.md"));
-
         // Copy headers.
-        const headersDir = path.join(rootDir, "dependencies", "glfw", "include");
-        fs.cpSync(headersDir, path.join(contentsDir, "include"), { recursive: true });
-
+        const srcPath = path.join(rootDir, config.paths.header_dir);
+        const destPath = path.join(contentsDir, "include");
+        fs.cpSync(srcPath, destPath, { recursive: true });
+        
         // Copy static libs.
         const staticLibsDir = path.join(rootDir, "build", "lib", platform.build_type);
         fs.cpSync(staticLibsDir, path.join(contentsDir, "libs"), { recursive: true });
 
         // Create CMake config.
         const templatesDir = path.join(rootDir, "dependencies", "prebuild-utils", "templates");
-        generate_cmake_config(contentsDir, templatesDir, config);
-        // fs.copyFileSync(cmakeConfigPath, path.join(contentsDir, "cmake", "glfwConfig.cmake"));
+        const cmakeDir = path.join(contentsDir, "cmake");
+        const cmakeConfigPath = path.join(cmakeDir, `${config.name}Config.cmake`);
+        ensureDir(cmakeDir);
+        generate_cmake_config(templatesDir, config, cmakeConfigPath);
 
         // Create manifest.
         const abi = generate_abi_from_config(config);

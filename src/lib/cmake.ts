@@ -50,15 +50,11 @@ type ConfigInput = {
 
 ////////////////////////////////////////////////////////////
 
-function ensureDir(p: string) {
-    fs.mkdirSync(p, { recursive: true });
-}
-
 function toPackageVar(name: string) {
     return name.replace(/[^A-Za-z0-9_]/g, "_");
 }
 
-function generateCMakeConfig(input: ConfigInput, outputDir: string, templatesDir: string) {
+function generateCMakeConfig(input: ConfigInput, templatesDir: string, outputPath: string) {
     const packageVar = toPackageVar(input.packageName);
     const templatePath = path.join(templatesDir, "Config.cmake.mustache");
     const template = fs.readFileSync(templatePath, "utf8");
@@ -83,11 +79,7 @@ function generateCMakeConfig(input: ConfigInput, outputDir: string, templatesDir
     };
 
     const rendered = Mustache.render(template, view);
-    const cmakeDir = path.join(outputDir, "cmake");
-    ensureDir(cmakeDir);
-    const outFile = path.join(cmakeDir, `${input.packageName}Config.cmake`);
-    fs.writeFileSync(outFile, rendered, "utf8");
-    return outFile;
+    fs.writeFileSync(outputPath, rendered, "utf8");
 }
 
 ////////////////////////////////////////////////////////////
@@ -140,7 +132,7 @@ function perConfig(
 
 ////////////////////////////////////////////////////////////
 
-export function generate_cmake_config(bundleRoot: string, templatesDir: string, config: BuildConfig) {
+export function generate_cmake_config(templatesDir: string, config: BuildConfig, outputPath: string) {
     const libs = config.output.map((lib) => {
 
         let locations: PerConfigLocations | undefined;
@@ -177,7 +169,8 @@ export function generate_cmake_config(bundleRoot: string, templatesDir: string, 
         libs
     };
 
-    const out = generateCMakeConfig(cmakeConfigParams, bundleRoot, templatesDir);
+    const out = generateCMakeConfig(cmakeConfigParams, templatesDir, outputPath);
+
 
     log.info(`Wrote CMake config to ${out}`);
     // console.log("Wrote:", out);
