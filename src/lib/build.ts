@@ -8,7 +8,7 @@ import { log } from "./log.js";
  * @param config - The configuration for the dependency.
  */
 export async function build_dependency(rootDir: string, config: BuildConfig) {
-    const { platform, compiler } = config;
+    const { platform, compiler, language, code_gen, runtime } = config;
 
     // print_build_config(config);
 
@@ -26,13 +26,13 @@ export async function build_dependency(rootDir: string, config: BuildConfig) {
 
         log.info(`Building ${config.name}(${config.version})...`);
         log.info(`> Platform: ${triplet}`);
-        log.info(`> Compiler: ${compiler.c_compiler} ${compiler.cxx_compiler} ${compiler.stdlib} ${compiler.cxx_std} ${compiler.cxx_flags}`);
+        log.info(`> Compiler: ${compiler.c} ${compiler.cpp} ${runtime.stdlib} ${language.cpp_std} ${code_gen.optimization}`);
         if (platform.os === "macos") {
-            env["BUILD_OSX_DEPLOYMENT_TARGET"] = compiler.options?.osx?.deployment_target ?? "";
-            log.info(`> macOS Deployment Target: ${compiler.options?.osx?.deployment_target ?? ""}`);
+            env["BUILD_OSX_DEPLOYMENT_TARGET"] = runtime.deployment_target;
+            log.info(`> macOS Deployment Target: ${runtime.deployment_target}`);
         } else if (platform.os === "ios") {
-            env["BUILD_IOS_DEPLOYMENT_TARGET"] = compiler.options?.ios?.deployment_target ?? "";
-            log.info(`> iOS Deployment Target: ${compiler.options?.ios?.deployment_target ?? ""}`);
+            env["BUILD_IOS_DEPLOYMENT_TARGET"] = runtime.deployment_target;
+            log.info(`> iOS Deployment Target: ${runtime.deployment_target}`);
         }
 
         await ensureTool("cmake");

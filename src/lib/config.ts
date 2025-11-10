@@ -7,6 +7,9 @@ const BUILD_CONFIG_FILE = "build.json";
 export type OSType = "macos" | "ios" | "windows" | "linux";
 export type ArchType = "arm64" | "x86_64";
 export type BuildType = "Release" | "Debug";
+export type OptimizationLevel = "-O0" | "-O1" | "-O2" | "-O3" | "-Os" | "-Oz";
+export type Stdlib = "libc++" | "libstdc++";
+export type LinkType = "Static" | "Shared";
 
 export type PlatformConfig = {
     // The operating system.
@@ -19,34 +22,58 @@ export type PlatformConfig = {
     build_type: BuildType;
 };
 
-export type OSXBuildOptions = {
-    deployment_target: string;
-};
-export type iOSBuildOptions = {
-    deployment_target: string;
-};
-
 export type CompilerConfig = {
     // The C compiler to use.
-    c_compiler: string;
+    c: string;
     // The C++ compiler to use.
-    cxx_compiler: string;
+    cpp: string;
+};
 
-    // The standard library to use.
-    stdlib: string;
+export type LanguageConfig = {
+    // The C standard to use.
+    c_std: string;
     // The C++ standard to use.
-    cxx_std: string;
-    // The C++ flags to use.
-    cxx_flags: string;
+    cpp_std: string;
 
-    // Additional options.
-    options?: {
-        osx?: OSXBuildOptions;
-        ios?: iOSBuildOptions;
-    };
+    // Whether to enable RTTI.
+    rtti: boolean;
+    // Whether to enable exceptions.
+    exceptions: boolean;
+};
+
+export type CodeGenConfig = {
+    // The build type to use.
+    build_type: BuildType;
+    // The link type to use.
+    link_type: LinkType;
+    // The optimization level to use.
+    optimization: OptimizationLevel;
+};
+
+export type MacOSRuntimeOptions = {
+    // The macOS deployment target to use.
+    deployment_target: string;
+};
+export type iOSRuntimeOptions = {
+    // The iOS deployment target to use.
+    deployment_target: string;
+};
+export type RuntimeConfig = {
+    // The standard library to use.
+    stdlib: Stdlib;
+} & (MacOSRuntimeOptions | iOSRuntimeOptions);
+
+export type LibOutput = {
+    // The name of the library.
+    name: string;
+    // The path to the library.
+    path: string;
 };
 
 export type BuildConfig = {
+    // The namespace of the dependency.
+    namespace: string;
+
     // The name of the dependency.
     name: string;
 
@@ -58,6 +85,18 @@ export type BuildConfig = {
 
     // The compiler configuration.
     compiler: CompilerConfig;
+
+    // The language configuration.
+    language: LanguageConfig;
+
+    // The code generation configuration.
+    code_gen: CodeGenConfig;
+
+    // The runtime configuration.
+    runtime: RuntimeConfig;
+
+    // The build output configuration.
+    output: LibOutput[];
 };
 
 /**
@@ -97,15 +136,15 @@ export function load_build_config(rootDir: string, presetName: string): BuildCon
 export function print_build_config(config: BuildConfig) {
     log.info(`${config.name}(${config.version})`);
     log.info(`> Platform: ${get_platform_triplet(config.platform)}`);
-    log.info(`> C Compiler: ${config.compiler.c_compiler}`);
-    log.info(`> C++ Compiler: ${config.compiler.cxx_compiler}`);
-    log.info(`> Stdlib: ${config.compiler.stdlib}`);
-    log.info(`> C++ Std: ${config.compiler.cxx_std}`);
-    log.info(`> C++ Flags: ${config.compiler.cxx_flags}`);
-    if (config.compiler.build && config.platform.os === "macos") {
-        log.info(`> macOS Deployment Target: ${config.compiler.build.deployment_target}`);
+    log.info(`> C Compiler: ${config.compiler.c}`);
+    log.info(`> C++ Compiler: ${config.compiler.cpp}`);
+    log.info(`> Stdlib: ${config.runtime.stdlib}`);
+    log.info(`> C++ Std: ${config.language.cpp_std}`);
+    log.info(`> C++ Flags: ${config.code_gen.optimization}`);
+    if (config.platform.os === "macos") {
+        log.info(`> macOS Deployment Target: ${config.runtime.deployment_target}`);
     }
-    if (config.compiler.build && config.platform.os === "ios") {
-        log.info(`> iOS Deployment Target: ${config.compiler.build.deployment_target}`);
+    if (config.platform.os === "ios") {
+        log.info(`> iOS Deployment Target: ${config.runtime.deployment_target}`);
     }
 }

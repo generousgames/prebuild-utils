@@ -7,5 +7,8 @@ export function generate_manifest(config: BuildConfig, hash: string) {
         hash: hash,
         platform: config.platform,
         compiler: config.compiler,
+        language: config.language,
+        code_gen: config.code_gen,
+        runtime: config.runtime,
     };
 }

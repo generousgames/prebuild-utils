@@ -4,6 +4,7 @@ import { get_platform_triplet, BuildConfig, print_build_config } from "./config.
 import { generate_manifest } from "./manifest.js";
 import archiver from "archiver";
 import { fs, path } from "zx";
+import { generate_cmake_config } from "./cmake.js";
 
 /**
  * Gets the directory of the bundle.
@@ -106,6 +107,11 @@ export async function bundle_dependency(rootDir: string, config: BuildConfig) {
         // Copy static libs.
         const staticLibsDir = path.join(rootDir, "build", "lib", platform.build_type);
         fs.cpSync(staticLibsDir, path.join(contentsDir, "libs"), { recursive: true });
+
+        // Create CMake config.
+        const templatesDir = path.join(rootDir, "dependencies", "prebuild-utils", "templates");
+        generate_cmake_config(contentsDir, templatesDir, config);
+        // fs.copyFileSync(cmakeConfigPath, path.join(contentsDir, "cmake", "glfwConfig.cmake"));
 
         // Create manifest.
         const abi = generate_abi_from_config(config);

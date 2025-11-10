@@ -21,13 +21,13 @@ export type AbiInfo = {
  * @returns The ABI information.
  */
 export function generate_abi_from_config(config: BuildConfig): AbiInfo {
-    const { platform, compiler } = config;
+    const { platform, compiler, language, code_gen, runtime } = config;
     return {
-        c_compiler: compiler.c_compiler,
-        cxx_compiler: compiler.cxx_compiler,
-        stdlib: compiler.stdlib,
-        cxx_std: compiler.cxx_std,
-        cxx_flags: compiler.cxx_flags,
+        c_compiler: compiler.c,
+        cxx_compiler: compiler.cpp,
+        stdlib: runtime.stdlib,
+        cxx_std: language.cpp_std,
+        cxx_flags: code_gen.optimization,
         arch: platform.arch,
         build_type: platform.build_type,
     };
