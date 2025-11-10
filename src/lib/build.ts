@@ -1,14 +1,13 @@
-import { get_platform_triplet, BuildConfig, print_build_config } from "./config.js";
+import { BuildConfig, get_preset } from "./config.js";
 import { run, ensureTool } from "./exec.js";
 import { log } from "./log.js";
 
 /**
  * Builds the dependency given a CMake preset name.
- * @param rootDir - The root directory of the repository.
  * @param config - The configuration for the dependency.
  */
-export async function build_dependency(rootDir: string, config: BuildConfig) {
-    const { platform, compiler, language, code_gen, runtime } = config;
+export async function build_dependency(config: BuildConfig) {
+    const { rootDir, platform, compiler, language, code_gen, runtime } = config;
 
     // print_build_config(config);
 
@@ -17,15 +16,15 @@ export async function build_dependency(rootDir: string, config: BuildConfig) {
             ...process.env,
             BUILD_OS: platform.os,
             BUILD_ARCH: platform.arch,
-            BUILD_TYPE: platform.build_type,
+            BUILD_TYPE: code_gen.build_type,
             // TODO: Other compiler settings (eg. RTTI, exceptions, etc.).
             // TODO: Other dependency specific flags (eg. GLFW_BUILD_EXAMPLES, GLFW_BUILD_DOCS, etc.).
         } as Record<string, string>;
 
-        const triplet = get_platform_triplet(platform);
+        const presetName = get_preset(config);
 
         log.info(`Building ${config.name}(${config.version})...`);
-        log.info(`> Platform: ${triplet}`);
+        log.info(`> Preset: ${presetName}`);
         log.info(`> Compiler: ${compiler.c} ${compiler.cpp} ${runtime.stdlib} ${language.cpp_std} ${code_gen.optimization}`);
         if (platform.os === "macos") {
             env["BUILD_OSX_DEPLOYMENT_TARGET"] = runtime.deployment_target;
@@ -36,8 +35,8 @@ export async function build_dependency(rootDir: string, config: BuildConfig) {
         }
 
         await ensureTool("cmake");
-        await run("cmake", ["--preset", triplet], { cwd: rootDir, env, verbose: true });
-        await run("cmake", ["--build", `projects/${triplet}`, "--config", platform.build_type, "--parallel"], { cwd: rootDir, env, verbose: true });
+        await run("cmake", ["--preset", presetName], { cwd: rootDir, env, verbose: true });
+        await run("cmake", ["--build", `projects/${presetName}`, "--config", code_gen.build_type, "--parallel"], { cwd: rootDir, env, verbose: true });
 
         log.ok(`Built successfully!`);
     } catch (error) {

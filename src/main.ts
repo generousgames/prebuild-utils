@@ -6,17 +6,13 @@ import { log } from "./lib/log";
 import { fs } from "zx";
 import { load_build_config } from "./lib/config";
 
-// # TODO
-// # (done) Be able to build for OSX.
-// # (---) Be able to build for multiple architectures.
-// # Be able to generate a package / bundle ABI hash.
-// # Be able to generate a package / bundle manifest.
-// # Be able to package / bundle the build output (static libs, headers, licenses, etc.).
-// # Be able to upload the package to a remote server.
-// # Integrate with the CI / CD pipeline.
-
 ///////////////////////////////////////////////////////////////////////////////
 
+/**
+ * Finds the root directory of the repository by looking for a CMakeLists.txt file.
+ * @param startDir - The starting directory.
+ * @returns The root directory of the repository.
+ */
 function findRepoRoot(startDir: string): string {
     let dir = startDir;
     while (dir !== path.parse(dir).root) {
@@ -28,11 +24,14 @@ function findRepoRoot(startDir: string): string {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-// Setup mimi and external dependencies.
+/**
+ * Sets up prebuild-utils.
+ * @param argv - The command line arguments.
+ */
 function setup(argv: string[]) {
     const rootDir = findRepoRoot(process.cwd());
 
-    log.info(`Setting up mimi and external dependencies...`);
+    log.info(`Setting prebuild-utils...`);
     log.info(`> Root: ${rootDir}`);
 
     // TODO
@@ -43,7 +42,9 @@ function setup(argv: string[]) {
     // deps_sync(rootDir, "macos-arm64-clang17");
 }
 
-// Clean temporary build directories.
+/**
+ * Cleans temporary build directories.
+ */
 function clean() {
     const rootDir = findRepoRoot(process.cwd());
     log.info(`Cleaning...`);
@@ -61,7 +62,10 @@ function clean() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-// Build.
+/**
+ * Builds the dependency given a CMake preset name.
+ * @param argv - The command line arguments.
+ */
 function build(argv: string[]) {
     if (argv.length !== 4) {
         log.err("Usage: prebuild-cli build <config_name>");
@@ -76,10 +80,13 @@ function build(argv: string[]) {
         process.exit(1);
     }
 
-    build_dependency(rootDir, config);
+    build_dependency(config);
 }
 
-// Bundle.
+/**
+ * Bundles the dependency given a CMake preset name.
+ * @param argv - The command line arguments.
+ */
 function bundle(argv: string[]) {
     if (argv.length !== 4) {
         log.err("Usage: prebuild-cli bundle <config_name>");
@@ -94,10 +101,13 @@ function bundle(argv: string[]) {
         process.exit(1);
     }
 
-    bundle_dependency(rootDir, config);
+    bundle_dependency(config);
 }
 
-// Deploy.
+/**
+ * Deploys the dependency given a CMake preset name.
+ * @param argv - The command line arguments.
+ */
 function deploy(argv: string[]) {
     if (argv.length !== 4) {
         log.err("Usage: prebuild-cli deploy <config_name>");
@@ -111,7 +121,7 @@ function deploy(argv: string[]) {
         process.exit(1);
     }
 
-    deploy_dependency(rootDir, config);
+    deploy_dependency(config);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

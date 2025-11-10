@@ -1,36 +1,53 @@
 import { log } from "./log.js";
 import shasum from "shasum";
 import { BuildConfig } from "./config.js";
+import { fs } from "zx";
 
 /**
  * Application Binary Interface (ABI) definition.
  */
 export type AbiInfo = {
-    c_compiler: string;
-    cxx_compiler: string;
+    // The triple (e.g. macos-arm64-clang17).
+    triple: string;
+
+    // The operating system.
+    os: string;
+    // The architecture.
     arch: string;
+
+    // The compiler family.
+    compilerFamily: string;
+
+    // The major version of the compiler frontend.
+    compilerFrontendMajor: number;
+
+    // The build type (e.g. Debug, Release).
+    buildType: string;
+
+    // The standard library (e.g. libc++, libstdc++).
     stdlib: string;
-    cxx_std: string;
-    cxx_flags: string;
-    build_type: string;
+
+    // The C++ standard (e.g. c++20, c++17, c++11, etc.).
+    cppStd: number;
 };
 
 /**
- * Generate ABI information from the given configuration.
- * @param config - The configuration.
+ * Generate ABI information from the given path.
+ * @param path - The path to the ABI JSON file.
  * @returns The ABI information.
  */
-export function generate_abi_from_config(config: BuildConfig): AbiInfo {
-    const { platform, compiler, language, code_gen, runtime } = config;
+export function generate_abi_from_path(path: string): AbiInfo {
+    const abiJSON = JSON.parse(fs.readFileSync(path, "utf8"));
     return {
-        c_compiler: compiler.c,
-        cxx_compiler: compiler.cpp,
-        stdlib: runtime.stdlib,
-        cxx_std: language.cpp_std,
-        cxx_flags: code_gen.optimization,
-        arch: platform.arch,
-        build_type: platform.build_type,
-    };
+        triple: abiJSON.triple,
+        os: abiJSON.os,
+        arch: abiJSON.arch,
+        compilerFamily: abiJSON.compilerFamily,
+        compilerFrontendMajor: abiJSON.compilerFrontendMajor,
+        buildType: abiJSON.buildType,
+        stdlib: abiJSON.stdlib,
+        cppStd: abiJSON.cppStd,
+    } as AbiInfo;
 }
 
 /**
@@ -39,8 +56,8 @@ export function generate_abi_from_config(config: BuildConfig): AbiInfo {
  * @returns The ABI fingerprint.
  */
 function generate_abi_fingerprint(abi_info: AbiInfo) {
-    const { c_compiler, cxx_compiler, arch, stdlib, cxx_std, cxx_flags, build_type } = abi_info;
-    return `${c_compiler}|${cxx_compiler}|${arch}|${stdlib}|${cxx_std}|${cxx_flags}|${build_type}`;
+    const { os, arch, compilerFamily, compilerFrontendMajor, buildType, stdlib, cppStd } = abi_info;
+    return `${os}|${arch}|${compilerFamily}|${compilerFrontendMajor}|${buildType}|${stdlib}|${cppStd}`;
 }
 
 /**
@@ -72,6 +89,7 @@ export function print_abi_info(abi_info: AbiInfo) {
     const abi_hash = generate_abi_hash(abi_info);
 
     log.info(`ABI`);
+    log.info(`> Triple: ${abi_info.triple}`);
     log.info(`> Fingerprint: ${fingerprint}`);
     log.info(`> Hash: ${abi_hash}`);
 }

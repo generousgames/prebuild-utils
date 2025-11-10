@@ -24,9 +24,6 @@ export type PlatformConfig = {
 
     // The architecture to build for.
     arch: ArchType;
-
-    // The build type to use.
-    build_type: BuildType;
 };
 
 export type CompilerConfig = {
@@ -78,6 +75,9 @@ export type LibOutput = {
 };
 
 export type BuildConfig = {
+    // The root directory of the repository.
+    rootDir: string;
+
     // The namespace of the dependency.
     namespace: string;
 
@@ -110,22 +110,22 @@ export type BuildConfig = {
 };
 
 /**
- * Get the triplet for the given platform.
- * @param platform - The platform configuration.
- * @returns The triplet.
+ * Get the preset for the given build configuration.
+ * @param config - The build configuration.
+ * @returns The preset name.
  */
-export function get_platform_triplet(platform: PlatformConfig): string {
-    return `${platform.os}-${platform.arch}-${platform.build_type}`;
+export function get_preset(config: BuildConfig): string {
+    return `${config.platform.os}-${config.platform.arch}-${config.code_gen.build_type}`;
 }
 
 /**
  * Load the build configuration from the given root directory.
- * @param rootDir - The root directory of the repository.
- * @param presetName - The name of the preset to load.
+ * @param root_dir - The root directory of the repository.
+ * @param preset - The preset to load.
  * @returns The build configuration.
  */
-export function load_build_config(rootDir: string, presetName: string): BuildConfig | undefined {
-    const build = path.join(rootDir, BUILD_CONFIG_FILE);
+export function load_build_config(root_dir: string, preset: string): BuildConfig | undefined {
+    const build = path.join(root_dir, BUILD_CONFIG_FILE);
     if (!fs.existsSync(build)) {
         log.err("Build config file not found.");
         process.exit(1);
@@ -133,13 +133,14 @@ export function load_build_config(rootDir: string, presetName: string): BuildCon
     const buildJson = JSON.parse(fs.readFileSync(build, "utf8"));
 
     return {
+        rootDir: root_dir,
         name: buildJson.name,
         version: buildJson.version,
         paths: {
             license_files: buildJson.license_files ?? [],
             header_dir: buildJson.header_dir ?? "",
         },
-        ...buildJson.configs[presetName],
+        ...buildJson.configs[preset],
     }
 }
 
@@ -149,7 +150,7 @@ export function load_build_config(rootDir: string, presetName: string): BuildCon
  */
 export function print_build_config(config: BuildConfig) {
     log.info(`${config.name}(${config.version})`);
-    log.info(`> Platform: ${get_platform_triplet(config.platform)}`);
+    log.info(`> Preset: ${get_preset(config)}`);
     log.info(`> C Compiler: ${config.compiler.c}`);
     log.info(`> C++ Compiler: ${config.compiler.cpp}`);
     log.info(`> Stdlib: ${config.runtime.stdlib}`);

@@ -1,10 +1,12 @@
-import { AbiInfo, generate_abi_from_config, generate_abi_hash, generate_abi_short_hash, print_abi_info } from "./abi.js";
+import { AbiInfo, generate_abi_from_path, generate_abi_hash, print_abi_info } from "./abi.js";
 import { log } from "./log.js";
-import { get_platform_triplet, BuildConfig, print_build_config } from "./config.js";
+import { BuildConfig, get_preset } from "./config.js";
 import { generate_manifest } from "./manifest.js";
 import archiver from "archiver";
 import { fs, path } from "zx";
 import { generate_cmake_config } from "./cmake.js";
+
+///////////////////////////////////////////////////////////////////////////////
 
 /**
  * Ensures a directory exists.
@@ -15,47 +17,11 @@ function ensureDir(p: string) {
 }
 
 /**
- * Gets the directory of the bundle.
- * @param rootDir - The root directory of the repository.
- * @param config - The configuration for the dependency.
- * @returns The directory of the bundle.
- */
-export function get_bundle_dir(rootDir: string, config: BuildConfig) {
-    const { platform } = config;
-    const triplet = get_platform_triplet(platform);
-    return path.join(rootDir, "bundles", triplet);
-}
-
-/**
- * Gets the filename of the bundle.
- * @param abi - The ABI information.
- * @param config - The configuration for the dependency.
- * @returns The filename of the bundle.
- */
-export function get_bundle_filename(abi: AbiInfo, config: BuildConfig) {
-    const hash = generate_abi_hash(abi);
-    return `${config.name}-${config.version}-${hash}.zip`;
-}
-
-/**
- * Gets the bundle path.
- * @param rootDir - The root directory of the repository.
- * @param config - The configuration for the dependency.
- * @returns The bundle path.
- */
-export function get_bundle_path(rootDir: string, config: BuildConfig) {
-    const abi = generate_abi_from_config(config);
-    const bundleDir = get_bundle_dir(rootDir, config);
-    const fileName = get_bundle_filename(abi, config);
-    return path.join(bundleDir, fileName);
-}
-
-/**
  * Zips a directory into a zip file.
  * @param inputDir - The directory to zip.
  * @param outZipPath - The path to the zip file.
  */
-export async function zipDir(inputDir: string, outZipPath: string) {
+async function zipDir(inputDir: string, outZipPath: string) {
     await fs.promises.mkdir(path.dirname(outZipPath), { recursive: true });
 
     const output = fs.createWriteStream(outZipPath);
@@ -82,22 +48,56 @@ export async function zipDir(inputDir: string, outZipPath: string) {
     await done;
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
+/**
+ * Gets the directory of the bundle.
+ * @param config - The configuration for the dependency.
+ * @returns The directory of the bundle.
+ */
+export function get_bundle_dir(config: BuildConfig) {
+    return path.join(config.rootDir, "bundles", get_preset(config));
+}
+
+/**
+ * Gets the filename of the bundle.
+ * @param config - The configuration for the dependency.
+ * @param bundleHash - The hash of the bundle.
+ * @returns The filename of the bundle.
+ */
+export function get_bundle_filename(config: BuildConfig, bundleHash: string) {
+    const name = config.name;
+    const version = config.version;
+    return `${name}-${version}-${bundleHash}.zip`;
+}
+
+/**
+ * Gets the bundle path.
+ * @param config - The configuration for the dependency.
+ * @param bundleHash - The hash of the bundle.
+ * @returns The bundle path.
+ */
+export function get_bundle_path(config: BuildConfig, bundleHash: string) {
+    const bundleDir = get_bundle_dir(config);
+    const fileName = get_bundle_filename(config, bundleHash);
+    return path.join(bundleDir, fileName);
+}
+
 /**
  * Bundles the dependency given a CMake preset name.
- * @param rootDir - The root directory of the repository.
  * @param config - The configuration for the dependency.
  */
-export async function bundle_dependency(rootDir: string, config: BuildConfig) {
-    const { platform } = config;
+export async function bundle_dependency(config: BuildConfig) {
+    const { rootDir } = config;
 
     // print_build_config(config);
-    // print_abi_info(abi);
 
     try {
-        // Create folder rootDir/bundles/presetName.
         const fs = await import("fs");
         const path = await import("path");
-        const bundleDir = get_bundle_dir(rootDir, config);
+
+        // Create folder rootDir/bundles/presetName.
+        const bundleDir = get_bundle_dir(config);
         const contentsDir = path.join(bundleDir, "contents");
         fs.rmSync(contentsDir, { recursive: true, force: true });
         ensureDir(contentsDir);
@@ -105,19 +105,19 @@ export async function bundle_dependency(rootDir: string, config: BuildConfig) {
         // Copy license files.
         const licensesDir = path.join(contentsDir, "licenses");
         ensureDir(licensesDir);
-        for (const licenseFile of config.paths.license_files) {
+        for (const licenseFile of config.paths.license_files ?? []) {
             const srcPath = path.join(rootDir, licenseFile);
             const destPath = path.join(licensesDir, path.basename(licenseFile));
             fs.copyFileSync(srcPath, destPath);
         }
 
         // Copy headers.
-        const srcPath = path.join(rootDir, config.paths.header_dir);
+        const srcPath = path.join(rootDir, config.paths.header_dir ?? "");
         const destPath = path.join(contentsDir, "include");
         fs.cpSync(srcPath, destPath, { recursive: true });
-        
+
         // Copy static libs.
-        const staticLibsDir = path.join(rootDir, "build", "lib", platform.build_type);
+        const staticLibsDir = path.join(rootDir, "build", "lib", config.code_gen.build_type);
         fs.cpSync(staticLibsDir, path.join(contentsDir, "libs"), { recursive: true });
 
         // Create CMake config.
@@ -128,13 +128,15 @@ export async function bundle_dependency(rootDir: string, config: BuildConfig) {
         generate_cmake_config(templatesDir, config, cmakeConfigPath);
 
         // Create manifest.
-        const abi = generate_abi_from_config(config);
+        const preset = get_preset(config);
+        const abiJSONPath = path.join(rootDir, "projects", preset, "abi.json");
+        const abi = generate_abi_from_path(abiJSONPath);        
         const hash = generate_abi_hash(abi);
         const manifest = generate_manifest(config, hash);
         fs.writeFileSync(path.join(contentsDir, "manifest.json"), JSON.stringify(manifest, null, 2));
 
         // Create bundle.
-        const bundlePath = get_bundle_path(rootDir, config);
+        const bundlePath = get_bundle_path(config, hash);
         {
             log.info(`Bundling ${config.name}(${config.version})...`);
             log.info(`> Destination: ${bundlePath}`);

@@ -1,9 +1,9 @@
 import path from "path";
-import { get_platform_triplet, BuildConfig, print_build_config } from "./config.js";
+import { BuildConfig, get_preset } from "./config.js";
 import { log } from "./log.js";
-import { generate_abi_from_config } from "./abi.js";
 import { s3_putObjectFile, AWSUploadCredentials, AWSUploadOptions, AWSRegion } from "./aws.js";
 import { get_bundle_path, get_bundle_filename } from "./bundle.js";
+import { generate_abi_from_path, generate_abi_hash } from "./abi.js";
 
 export type DeployConfig = {
     region: string;
@@ -11,23 +11,23 @@ export type DeployConfig = {
 
 /**
  * Gets the remote bucket path.
- * @param config - The configuration for the dependency.
+ * @param name - The name of the dependency.
+ * @param triple - The triple of the dependency.
+ * @param buildType - The build type of the dependency.
+ * @param filename - The filename of the dependency.
  * @returns The remote bucket path.
  */
-function get_remote_bucket_path(config: BuildConfig, uploadRoot: string) {
-    const { platform, name } = config;
-    const abi = generate_abi_from_config(config);
-    const triplet = get_platform_triplet(platform);
-    const fileName = get_bundle_filename(abi, config);
-    return path.join(uploadRoot, `${triplet}/${name}`, fileName);
+function get_remote_bucket_path(name: string, triple: string, buildType: string, filename: string, uploadRoot: string) {
+    return path.join(uploadRoot, `${name}`, `${triple}`, `${buildType}`, filename);
 }
 
 /**
  * Deploys the dependency given a CMake preset name.
- * @param rootDir - The root directory of the repository.
  * @param config - The configuration for the dependency.
  */
-export async function deploy_dependency(rootDir: string, config: BuildConfig) {
+export async function deploy_dependency(config: BuildConfig) {
+    const { rootDir } = config;
+
     // print_build_config(config);
 
     try {
@@ -52,8 +52,19 @@ export async function deploy_dependency(rootDir: string, config: BuildConfig) {
             credentials: awsUploadCredentials,
         };
 
-        const localBundlePath = get_bundle_path(rootDir, config);
-        const remoteBucketPath = get_remote_bucket_path(config, process.env.AWS_S3_UPLOAD_ROOT);
+        // Generate ABI information.
+        const preset = get_preset(config);
+        const abiJSONPath = path.join(rootDir, "projects", preset, "abi.json");
+        const abi = generate_abi_from_path(abiJSONPath);
+        
+        // Generate local bundle path.
+        const hash = generate_abi_hash(abi);
+        const localBundlePath = get_bundle_path(config, hash);
+
+        // Generate remote bucket path.
+        const buildType = config.code_gen.build_type;
+        const fileName = get_bundle_filename(config, hash);
+        const remoteBucketPath = get_remote_bucket_path(config.name, abi.triple, buildType, fileName, process.env.AWS_S3_UPLOAD_ROOT);
 
         log.info(`Deploying to AWS S3...`);
         log.info(`> Region: ${process.env.AWS_REGION}`);
@@ -68,3 +79,4 @@ export async function deploy_dependency(rootDir: string, config: BuildConfig) {
         throw error;
     }
 }
+

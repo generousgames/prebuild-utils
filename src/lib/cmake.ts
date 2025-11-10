@@ -137,9 +137,9 @@ export function generate_cmake_config(templatesDir: string, config: BuildConfig,
 
         let locations: PerConfigLocations | undefined;
         if (config.code_gen.link_type === "Static") {
-            if (config.platform.build_type === "Debug") {
+            if (config.code_gen.build_type === "Debug") {
                 locations = debugStatic(`${lib.path}`);
-            } else if (config.platform.build_type === "Release") {
+            } else if (config.code_gen.build_type === "Release") {
                 locations = releaseStatic(`${lib.path}`);
             } else {
                 locations = singleStatic(`${lib.path}`);
@@ -169,9 +169,5 @@ export function generate_cmake_config(templatesDir: string, config: BuildConfig,
         libs
     };
 
-    const out = generateCMakeConfig(cmakeConfigParams, templatesDir, outputPath);
-
-
-    log.info(`Wrote CMake config to ${out}`);
-    // console.log("Wrote:", out);
+    generateCMakeConfig(cmakeConfigParams, templatesDir, outputPath);
 }
