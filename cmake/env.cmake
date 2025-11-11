@@ -1,8 +1,8 @@
 # cmake/env.cmake
 cmake_minimum_required(VERSION 3.27)
 
-# abi.cmake — minimal, dependency-free ABI/triple detector
-# Include with: include("${PREBUILD_UTILS_DIR}/cmake/abi.cmake")
+# env.cmake — minimal, dependency-free environment detector
+# Include with: include("${PREBUILD_UTILS_DIR}/cmake/env.cmake")
 
 # Functions:
 # build_detect_abi -> build_write_abi_json
