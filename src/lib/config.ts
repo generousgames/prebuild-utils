@@ -2,7 +2,7 @@ import path from "path";
 import { fs } from "zx";
 import { log } from "./log";
 
-const BUILD_CONFIG_FILE = "build.json";
+const BUILD_MANIFEST_FILE = "manifest.json";
 
 export type OSType = "macos" | "ios" | "windows" | "linux";
 export type ArchType = "arm64" | "x86_64";
@@ -125,22 +125,22 @@ export function get_preset(config: BuildConfig): string {
  * @returns The build configuration.
  */
 export function load_build_config(root_dir: string, preset: string): BuildConfig | undefined {
-    const build = path.join(root_dir, BUILD_CONFIG_FILE);
-    if (!fs.existsSync(build)) {
-        log.err("Build config file not found.");
+    const manifest = path.join(root_dir, BUILD_MANIFEST_FILE);
+    if (!fs.existsSync(manifest)) {
+        log.err("Manifest file not found.");
         process.exit(1);
     }
-    const buildJson = JSON.parse(fs.readFileSync(build, "utf8"));
+    const manifestJson = JSON.parse(fs.readFileSync(manifest, "utf8"));
 
     return {
         rootDir: root_dir,
-        name: buildJson.name,
-        version: buildJson.version,
+        name: manifestJson.name,
+        version: manifestJson.version,
         paths: {
-            license_files: buildJson.license_files ?? [],
-            header_dir: buildJson.header_dir ?? "",
+            license_files: manifestJson.license_files ?? [],
+            header_dir: manifestJson.header_dir ?? "",
         },
-        ...buildJson.configs[preset],
+        ...manifestJson.configs[preset],
     }
 }
 
